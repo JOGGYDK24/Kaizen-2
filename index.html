@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KAIZEN Ultra</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        :root {
+            --bg: #f4f7fe; --grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass: rgba(255, 255, 255, 0.95); --border: rgba(255, 255, 255, 0.5);
+            --text: #2d3436; --accent: #764ba2;
+        }
+        .dark-mode { --bg: #0f0c29; --glass: rgba(30, 30, 40, 0.9); --text: #ffffff; }
+        
+        body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-serif; margin: 0; padding: 0; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        .app-wrapper { max-width: 500px; margin: 0 auto; min-height: 100vh; padding: 20px; padding-bottom: 100px; box-sizing: border-box; }
+
+        /* --- UI ADAPTABLE --- */
+        h1 { font-size: calc(1.5rem + 2vw); font-weight: 800; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .widget { background: var(--glass); border-radius: 20px; padding: 15px; text-align: center; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; }
+        .widget i { font-size: 1.8rem; margin-bottom: 8px; display: block; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .widget h3 { font-size: 0.9rem; margin: 0; }
+        .badge { position: absolute; top: 8px; right: 8px; font-size: 0.55rem; color: white; padding: 2px 6px; border-radius: 8px; font-weight: bold; }
+        .locked { filter: grayscale(1); opacity: 0.6; }
+
+        /* --- CHAT FULLSCREEN --- */
+        .chat-view { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 5000; flex-direction: column; padding: 15px; box-sizing: border-box; }
+        .chat-view.active { display: flex; }
+        .chat-box { flex: 1; background: var(--glass); border-radius: 20px; padding: 15px; overflow-y: auto; margin: 10px 0; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 10px 14px; border-radius: 15px; max-width: 85%; font-size: 0.85rem; }
+        .msg.bot { background: var(--grad); color: white; align-self: flex-start; }
+        .msg.user { background: rgba(0,0,0,0.05); align-self: flex-end; border: 1px solid var(--border); }
+
+        /* --- PLAYER --- */
+        .player { background: var(--glass); border-radius: 15px; padding: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; border: 1px solid var(--border); }
+        .p-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--grad); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        /* --- NAV --- */
+        .nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: var(--glass); backdrop-filter: blur(10px); border-radius: 25px; display: flex; justify-content: space-around; padding: 10px; border: 1px solid var(--border); box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .n-icon { font-size: 1.2rem; color: #b2bec3; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .n-icon.active { color: white; background: var(--grad); transform: translateY(-5px); }
+
+        /* --- INPUTS --- */
+        .input-glass { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,0.5); margin-bottom: 8px; box-sizing: border-box; outline: none; }
+        .btn-grad { background: var(--grad); color: white; border: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        
+        #modal-lock { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 6000; align-items: center; justify-content: center; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="modal-lock">
+        <div style="background:var(--glass); padding:25px; border-radius:20px; text-align:center; width:100%; max-width:300px;">
+            <h3>¡Desbloquea esta IA! 🎬</h3>
+            <p style="font-size:0.8rem">Mira un anuncio para usarla por 3 horas.</p>
+            <button class="btn-grad" id="btn-unlock">Ver Video ✨</button>
+            <p onclick="closeModal()" style="margin-top:15px; cursor:pointer; font-size:0.8rem; font-weight:bold;">Cerrar</p>
+        </div>
+    </div>
+
+    <div class="app-wrapper">
+        <header style="display:flex; justify-content:space-between; align-items:center;">
+            <h1>KAIZEN</h1>
+            <i class="fa-solid fa-moon" onclick="toggleDark()" style="font-size:1.2rem; color:var(--accent);"></i>
+        </header>
+
+        <div id="home" class="section active">
+            <div class="grid">
+                <div class="widget" onclick="nav('gastos', 1)"><i class="fa-solid fa-wallet"></i><h3>Billetera</h3></div>
+                <div class="widget" onclick="nav('relax', 2)"><i class="fa-solid fa-headphones"></i><h3>Sueño</h3></div>
+                <div id="w-chef" class="widget locked" onclick="handleLock('chef')"><span id="st-chef" class="badge"></span><i class="fa-solid fa-utensils"></i><h3>Chef IA</h3></div>
+                <div id="w-frases" class="widget locked" onclick="handleLock('frases')"><span id="st-frases" class="badge"></span><i class="fa-solid fa-wand-magic-sparkles"></i><h3>Frases</h3></div>
+            </div>
+        </div>
+
+        <div id="gastos" class="section">
+            <div style="background:var(--grad); color:white; padding:20px; border-radius:20px; text-align:center; margin-bottom:15px;">
+                <div id="t-disp" style="font-size:1.8rem; font-weight:800">RD$ 0</div>
+                <select id="c-sel" onchange="renderG()" style="background:none; border:none; color:white; font-weight:bold;">
+                    <option value="RD$">RD$</option><option value="$">USD</option>
+                </select>
+            </div>
+            <input type="text" id="d-in" class="input-glass" placeholder="¿En qué gastaste?">
+            <input type="number" id="a-in" class="input-glass" placeholder="Monto">
+            <button class="btn-grad" onclick="addG()">Registrar</button>
+            <div id="g-list" style="margin-top:15px"></div>
+        </div>
+
+        <div id="relax" class="section">
+            <div class="player">
+                <div class="p-btn" onclick="tPlay('rain')"><i class="fa-solid fa-cloud-rain"></i></div>
+                <select id="rain-src" onchange="chSrc('rain', this.value)" class="input-glass" style="margin:0; flex:1; height:35px; padding:0 10px;">
+                    <option value="lluvia1.mp3">Suave</option><option value="lluvia2.mp3">Tormenta</option>
+                    <option value="lluvia3.mp3">Techo</option>
+                </select>
+                <audio id="audio-rain" loop><source src="lluvia/lluvia1.mp3"></audio>
+            </div>
+            <div class="player"><div class="p-btn" onclick="tPlay('fire')"><i class="fa-solid fa-fire"></i></div><div style="flex:1">Fuego</div><audio id="audio-fire" loop><source src="fuego/fuego.mp3"></audio></div>
+            <div class="player"><div class="p-btn" onclick="tPlay('river')"><i class="fa-solid fa-water"></i></div><div style="flex:1">Río</div><audio id="audio-river" loop><source src="rio/rio.mp3"></audio></div>
+        </div>
+
+        <div id="chat-view" class="chat-view">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 id="chat-title" style="margin:0">IA</h3>
+                <i class="fa-solid fa-xmark" onclick="closeChat()" style="font-size:1.2rem;"></i>
+            </div>
+            <div id="chat-box" class="chat-box"></div>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="chat-in" class="input-glass" placeholder="Escribe..." style="margin:0">
+                <button onclick="askGemini()" class="btn-grad" style="width:50px; padding:0"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <div class="n-icon active" onclick="nav('home', 0)"><i class="fa-solid fa-house"></i></div>
+            <div class="n-icon" onclick="nav('gastos', 1)"><i class="fa-solid fa-wallet"></i></div>
+            <div class="n-icon" onclick="nav('relax', 2)"><i class="fa-solid fa-headphones"></i></div>
+        </nav>
+    </div>
+
+    <script>
+        const GEMINI_KEY = "AIzaSyBAk0xPA94PPWE8sVZC16_CIR1mukIzwRo";
+        let currentIA = '', gs = [];
+
+        window.onload = () => { loadG(); updateIAStatus(); };
+
+        function handleLock(tipo) {
+            const exp = localStorage.getItem('lock_' + tipo), ahora = new Date().getTime();
+            if (exp && ahora < parseInt(exp)) { openChat(tipo); }
+            else { currentIA = tipo; document.getElementById('modal-lock').style.display = 'flex'; 
+                   document.getElementById('btn-unlock').onclick = () => { localStorage.setItem('lock_' + currentIA, ahora + (10800000)); closeModal(); updateIAStatus(); openChat(currentIA); }; }
+        }
+
+        function updateIAStatus() {
+            ['chef', 'frases'].forEach(t => {
+                const exp = localStorage.getItem('lock_' + t), ahora = new Date().getTime(), b = document.getElementById('st-' + t), w = document.getElementById('w-' + t);
+                if (exp && ahora < parseInt(exp)) { b.innerText = "Abierto"; b.style.background = "#00b894"; w.classList.remove('locked'); }
+                else { b.innerText = "Cerrado"; b.style.background = "#ff7675"; w.classList.add('locked'); }
+            });
+        }
+
+        function openChat(t) { currentIA = t; document.getElementById('chat-title').innerText = t.toUpperCase(); document.getElementById('chat-view').classList.add('active'); }
+        function closeChat() { document.getElementById('chat-view').classList.remove('active'); }
+
+        async function askGemini() {
+            const i = document.getElementById('chat-in'), b = document.getElementById('chat-box'), t = i.value.trim();
+            if(!t) return; b.innerHTML += `<div class="msg user">${t}</div>`; i.value = "";
+            const id = "bot-" + Date.now(); b.innerHTML += `<div class="msg bot" id="${id}">...</div>`;
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `Responde corto con emojis como ${currentIA}: ${t}` }] }] })
+                });
+                const d = await res.json(); document.getElementById(id).innerText = d.candidates[0].content.parts[0].text;
+            } catch (e) { document.getElementById(id).innerText = "Error. Intenta de nuevo."; }
+            b.scrollTop = b.scrollHeight;
+        }
+
+        function addG() { const d = document.getElementById('d-in').value, a = document.getElementById('a-in').value; if(!d || !a) return; gs.push({d, a: parseFloat(a)}); localStorage.setItem('k_gs', JSON.stringify(gs)); document.getElementById('d-in').value = ""; document.getElementById('a-in').value = ""; renderG(); }
+        function renderG() { const l = document.getElementById('g-list'), t = document.getElementById('t-disp'), cur = document.getElementById('c-sel').value; l.innerHTML = ""; let tot = 0; gs.forEach(g => { tot += g.a; l.innerHTML += `<div style="padding:8px; display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,0,0,0.05)"><span>${g.d}</span><b>${cur}${g.a}</b></div>`; }); t.innerText = cur + " " + tot.toLocaleString(); }
+        function loadG() { const s = localStorage.getItem('k_gs'); if(s) gs = JSON.parse(s); renderG(); }
+        function tPlay(id) { const a = document.getElementById('audio-'+id); a.paused ? a.play() : a.pause(); }
+        function chSrc(id, p) { const a = document.getElementById('audio-'+id); a.src = 'lluvia/' + p; a.play(); }
+        function nav(id, idx) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.n-icon').forEach(i => i.classList.remove('active')); document.querySelectorAll('.n-icon')[idx].classList.add('active'); }
+        function closeModal() { document.getElementById('modal-lock').style.display = 'none'; }
+        function toggleDark() { document.body.classList.toggle('dark-mode'); }
+    </script>
+</body>
+</html>
